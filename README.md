@@ -109,50 +109,12 @@ To get a local copy up and running follow these simple steps.
 
 ### Transfer function
 
-A transfer function needs to be injected to the driver so it can access your device
-specific SPI peripheral while remaining agnostic to the platform you are using it at.
+A transfer function glues the driver logic with the current device specific API.
+The transfer function needs to be injected to the driver, so it can access your 
+device specific SPI peripheral while remaining agnostic to the platform you are
+using it at.
 
-#### ESP32 example of a SPI transfer function and bus initialization
-
-Above, a simple example of how this could be implemented
-on ESP32 MCU using esp-idf:
-
-- First of all, initiallize the SPI peripheral and add a MAX6675 instance
-  ```c
-  bool spi_init(void) {
-          bool success;
-          spi_bus_config_t buscfg = {
-                          .miso_io_num = MAX6675_MISO_PIN,
-                          .mosi_io_num = MAX6675_MOSI_PIN,
-                          .sclk_io_num = MAX6675_CLK_PIN,
-                          .max_transfer_sz = (4 * 8)
-          };
-  
-          spi_device_interface_config_t max6675_cfg={
-                          .mode = 0,
-                          .clock_speed_hz = 2 * 1000 * 1000,
-                          .spics_io_num = 4,
-                          .queue_size = 3
-          };
-
-          esp_err_t esp_result;
-
-          // Initialize ESP32's SPI bus
-          esp_result = spi_bus_initialize(HSPI_HOST, &buscfg, 2);
-
-          success = (ESP_OK == esp_result);
-
-          if (success) {
-                  // Make esp-idf aware of our MAX6675
-                  esp_result = spi_bus_add_device(HSPI_HOST, &max6675_cfg, &m_max6675_spi);
-  
-                  success = (ESP_OK == esp_result);
-          }
-
-          return success;
-  }
-  ```
-- Provide a transfer function with the following prototype:
+The transfer function should match with the following prototype:
 
   ```c 
   /*!
@@ -169,11 +131,15 @@ on ESP32 MCU using esp-idf:
   typedef bool (*pf_read_func_t)(uint8_t * const p_rx_buffer, size_t const size);
    
    ```
-  
-- As an example:
+
+#### Transfer function and module initialization example
+An example of a transfer function for Espressif's esp-idf would be:
 
   ```c
-  bool max6675_spi_xchg(uint8_t const * const rx_buffer, size_t const size)
+
+  static spi_device_handle_t m_max6675_spi_handle
+
+  bool max6675_spi_xchg(uint8_t * const rx_buffer, size_t const size)
   {
           // Configure the transaction type
           spi_transaction_t const transaction = {
@@ -188,15 +154,18 @@ on ESP32 MCU using esp-idf:
 
           // Lock the SPI bus for our use
           if (success) {
-                  esp_result = spi_device_acquire_bus(m_max6675_spi, portMAX_DELAY);
-  
+                  esp_result = spi_device_acquire_bus(m_max6675_spi_handle,
+                                                      portMAX_DELAY);
+
                   success = (ESP_OK == esp_result);
           }
 
           // Init transaction (request in this case) and unlock the bus at the end
           if (success) {
-                  esp_result = spi_device_transmit(m_max6675_spi, &transaction);
-                  spi_device_release_bus(m_max6675_spi);
+                  esp_result = spi_device_transmit(m_max6675_spi_handle,
+                                                   &transaction);
+
+                  spi_device_release_bus(m_max6675_spi_handle);
   
                   success = (ESP_OK == esp_result);
           }
@@ -205,18 +174,67 @@ on ESP32 MCU using esp-idf:
   }
   
   ```
+
+Below an implementation example for an ESP32 MCU using esp-idf is suggested:
+
+- Device specific SPI bus and peripheral initialization
+- Transfer function definition
+- Driver initialization with injection of the transfer function
+
+1) Initialize the SPI bus and add a MAX6675 instance
+      ```c
+      bool spi_init(void) {
+              bool success;
+              spi_bus_config_t const bus_cfg = {
+                              .miso_io_num = MAX6675_MISO_PIN,
+                              .mosi_io_num = MAX6675_MOSI_PIN,
+                              .sclk_io_num = MAX6675_CLK_PIN,
+                              .max_transfer_sz = (4 * 8)
+              };
+      
+              spi_device_interface_config_t const max6675_cfg = {
+                              .mode = 0,
+                              .clock_speed_hz = 2 * 1000 * 1000,
+                              .spics_io_num = 4,
+                              .queue_size = 3
+              };
+    
+              esp_err_t esp_result;
+    
+              // Initialize ESP32's SPI bus
+              esp_result = spi_bus_initialize(HSPI_HOST, &bus_cfg, 2);
+    
+              success = (ESP_OK == esp_result);
+    
+              if (success) {
+                      // Make esp-idf aware of our MAX6675
+                      esp_result = spi_bus_add_device(HSPI_HOST,
+                                                      &max6675_cfg,
+                                                      &m_max6675_spi_handle);
+      
+                      success = (ESP_OK == esp_result);
+              }
+    
+              return success;
+      }
+      ```
+2) Define the transfer function as indicated above
+3) Initialize the module and inject the transfer function
+   1) Declare a handle for this specific instance of MAX6675
+      ```c
+      max6675_handle_t handle;
+      ```
+   2) Pass both the handle and the transfer function to the driver's initializing function
+      ```c
+      max6675_error_t max6675_result = max6675_init(&handle, max6675_spi_xchg);
+      ```
   
-#### Module initialization
+### Reading the temperature
 
-After declaring the transfer function, initialize the module with the following call:
-
-```
-max6675_error_t max6675_result = max6675_init(max6675_spi_xchg);
-```
-  
-#### Read the temperature
-
-Perform temperature readings with the following calls
+Bellow there is an example for performing temperature readings.
+1) Check whether the thermocouple cable is properly connected
+2) If everything is fine, read and use the temperature value. The temperature is
+   provided in centi-degrees Celsius.
 
 ```c
 int16_t temperature;
@@ -224,12 +242,12 @@ bool sensor_is_connected;
 bool success;
 max6675_error_t result;
 
-result = max6675_is_sensor_connected(&sensor_is_connected);
+result = max6675_is_sensor_connected(&handle, &sensor_is_connected);
 
 success = ((MAX6675_ERROR_SUCCESS == result) && (sensor_is_connected));
 
 if (success) {
-        result = max6675_read_temperature(&temperature);
+        result = max6675_read_temperature(&handle, &temperature);
 
         success = (MAX6675_ERROR_SUCCESS == result);
 }
@@ -238,6 +256,7 @@ if (success) {
         printf("The temperature is %f degrees celsius\n", ((float)temperature)/100);
 }
 ```
+
 ### Further documentation
 
 _Please refer to the in code documentation and to the [MAXIM MAX6675 Datasheet](https://datasheets.maximintegrated.com/en/ds/MAX6675.pdf)_
