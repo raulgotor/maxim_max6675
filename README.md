@@ -7,7 +7,7 @@
 ***
 ***
 *** To avoid retyping too much info. Do a search and replace for the following:
-*** raulgotor, maxim_max6675, twitter_handle, MAXIM AS6675 Driver, Platform agnostic C driver for the MAXIM AS6675 Cold-Junction-Compensated K-Thermocouple-to-Digital Converter
+*** raulgotor, maxim_max6675, twitter_handle, Maxim MAX6675 Driver, Platform agnostic C driver for the Maxim MAX6675 Cold-Junction-Compensated K-Thermocouple-to-Digital Converter
 -->
 
 
@@ -33,10 +33,10 @@
     <!img src="images/logo.png" alt="Logo" width="80" height="80">
   </a>
 
-<h3 align="center">MAXIM AS6675 Driver</h3>
+<h3 align="center">Maxim MAX6675 Driver</h3>
 
   <p align="center">
-    Platform agnostic C driver for the MAXIM AS6675 Cold-Junction-Compensated K-Thermocouple-to-Digital Converter
+    Platform agnostic C driver for the Maxim MAX6675 Cold-Junction-Compensated K-Thermocouple-to-Digital Converter
     <br />
     <a href="https://github.com/raulgotor/maxim_max6675"><strong>Explore the docs »</strong></a>
     <br />
@@ -77,7 +77,7 @@
 
 Here's a blank template to get started:
 **To avoid retyping too much info. Do a search and replace with your text editor for the following:**
-`raulgotor`, `maxim_max6675`, `twitter_handle`, `MAXIM AS6675 Driver`, `Platform agnostic C driver for the MAXIM AS6675 Cold-Junction-Compensated K-Thermocouple-to-Digital Converter`
+`raulgotor`, `maxim_max6675`, `twitter_handle`, `Maxim MAX6675 Driver`, `Platform agnostic C driver for the Maxim MAX6675 Cold-Junction-Compensated K-Thermocouple-to-Digital Converter`
 
 
 ### Built With
@@ -259,7 +259,7 @@ if (success) {
 
 ### Further documentation
 
-_Please refer to the in code documentation and to the [MAXIM MAX6675 Datasheet](https://datasheets.maximintegrated.com/en/ds/MAX6675.pdf)_
+_Please refer to the in code documentation and to the [Maxim MAX6675 Datasheet](https://datasheets.maximintegrated.com/en/ds/MAX6675.pdf)_
 
 
 
